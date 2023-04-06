@@ -56,4 +56,5 @@ source ~/.zshrc
 python --version
 ```
 
-- dkfkqkdh
+- dkfkqkdhdadda
+- 코드작성-컴파일러 -바이트코드-파이썬 가상머신-기계어
