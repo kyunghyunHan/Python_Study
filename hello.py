@@ -1,1 +1,2 @@
-print(1//2)
+for odd  in range(1,10,2):
+    print(odd)
