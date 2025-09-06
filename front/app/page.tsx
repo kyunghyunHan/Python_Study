@@ -7,6 +7,8 @@ import {
   SystemProgram,
   Transaction,
 } from '@solana/web3.js';
+import idl from '../../target/idl/todolist.json';
+
 import {
   Program,
   AnchorProvider,
@@ -16,10 +18,9 @@ import {
   setProvider
 } from '@coral-xyz/anchor';
 
-// Todo 아이템 인터페이스
 interface TodoItem {
   content: string;
-  is_done: boolean; // isDone -> is_done으로 변경
+  isDone: boolean;
 }
 
 // Phantom Wallet 인터페이스
@@ -43,380 +44,10 @@ declare global {
   }
 }
 
-// 프로그램 설정
 const PROGRAM_ID = new PublicKey("E9WdtdnurfGF7vkAQcEXQwBnj1ykNmqTmQ4DwtKPL3Nx");
 const TODO_ACCOUNT_SEED = "todo-account";
 
-// IDL (Interface Definition Language) - 단순한 구조
-const IDL = {
-  "address": "E9WdtdnurfGF7vkAQcEXQwBnj1ykNmqTmQ4DwtKPL3Nx",
-  "metadata": {
-    "name": "todolist",
-    "version": "0.1.0",
-    "spec": "0.1.0",
-    "description": "Created with Anchor"
-  },
-  "instructions": [
-    {
-      "name": "add_content",
-      "discriminator": [
-        183,
-        126,
-        202,
-        103,
-        73,
-        114,
-        135,
-        191
-      ],
-      "accounts": [
-        {
-          "name": "todo_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  100,
-                  111,
-                  45,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "content",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "initialize",
-      "discriminator": [
-        175,
-        175,
-        109,
-        31,
-        13,
-        152,
-        155,
-        237
-      ],
-      "accounts": [
-        {
-          "name": "user_account",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "todo_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  100,
-                  111,
-                  45,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user_account"
-              }
-            ]
-          }
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "remove_todo",
-      "discriminator": [
-        28,
-        167,
-        91,
-        69,
-        25,
-        225,
-        253,
-        117
-      ],
-      "accounts": [
-        {
-          "name": "todo_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  100,
-                  111,
-                  45,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "index",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "update_content",
-      "discriminator": [
-        201,
-        145,
-        238,
-        112,
-        36,
-        231,
-        69,
-        8
-      ],
-      "accounts": [
-        {
-          "name": "todo_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  100,
-                  111,
-                  45,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "index",
-          "type": "u8"
-        },
-        {
-          "name": "new_content",
-          "type": "string"
-        }
-      ]
-    },
-    {
-      "name": "update_state",
-      "discriminator": [
-        135,
-        112,
-        215,
-        75,
-        247,
-        185,
-        53,
-        176
-      ],
-      "accounts": [
-        {
-          "name": "todo_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  100,
-                  111,
-                  45,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "user"
-              }
-            ]
-          }
-        },
-        {
-          "name": "user",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "index",
-          "type": "u8"
-        }
-      ]
-    }
-  ],
-  "accounts": [
-    {
-      "name": "List",
-      "discriminator": [
-        169,
-        24,
-        186,
-        110,
-        22,
-        139,
-        190,
-        82
-      ]
-    }
-  ],
-  "errors": [
-    {
-      "code": 6000,
-      "name": "MaxTodosReached",
-      "msg": "Maximum number of todos reached (20)"
-    },
-    {
-      "code": 6001,
-      "name": "InvalidIndex",
-      "msg": "Invalid todo index"
-    },
-    {
-      "code": 6002,
-      "name": "Unauthorized",
-      "msg": "Unauthorized access - you can only modify your own todos"
-    },
-    {
-      "code": 6003,
-      "name": "EmptyContent",
-      "msg": "Content cannot be empty"
-    },
-    {
-      "code": 6004,
-      "name": "ContentTooLong",
-      "msg": "Content too long (maximum 200 characters)"
-    }
-  ],
-  "types": [
-    {
-      "name": "Item",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "content",
-            "type": "string"
-          },
-          {
-            "name": "is_done",
-            "type": "bool"
-          }
-        ]
-      }
-    },
-    {
-      "name": "List",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "todos",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "Item"
-                }
-              }
-            }
-          }
-        ]
-      }
-    }
-  ]
-};
 
-// Provider 생성 함수
 const getProvider = () => {
   const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
   const provider = new AnchorProvider(connection, window.solana as any, {
@@ -426,11 +57,10 @@ const getProvider = () => {
   return provider;
 };
 
-// Program 인스턴스를 안전하게 생성하는 함수
 const createProgram = () => {
   try {
     const provider = getProvider();
-    return new Program(IDL as any, provider);
+    return new Program(idl as any, provider);
   } catch (error) {
     console.error('Program creation error:', error);
     return null;
@@ -445,16 +75,13 @@ export default function SolanaTodoApp(): React.ReactElement {
   const [loading, setLoading] = useState<boolean>(false);
   const [initialized, setInitialized] = useState<boolean>(false);
 
-  // Connection 설정
   const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
 
-  // Program 설정 - 지갑이 연결되었을 때만 생성
   const program = useMemo(() => {
     if (!phantomWallet || !phantomWallet.publicKey) return null;
     return createProgram();
   }, [phantomWallet]);
 
-  // Todo Account PDA 계산
   const getTodoAccountPDA = async (userPublicKey: PublicKey) => {
     const [todoAccountPda] = await PublicKey.findProgramAddress(
       [Buffer.from(TODO_ACCOUNT_SEED), userPublicKey.toBuffer()],
@@ -463,7 +90,6 @@ export default function SolanaTodoApp(): React.ReactElement {
     return todoAccountPda;
   };
 
-  // Phantom Wallet 연결
   const connectWallet = async (): Promise<void> => {
     try {
       const getProvider = (): PhantomProvider | null => {
@@ -508,7 +134,6 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
   };
 
-  // 계정 상태 확인
   const checkAccountStatus = async (userPublicKey: PublicKey) => {
     if (!program) {
       console.log('Program not initialized yet');
@@ -516,12 +141,18 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
 
     try {
+      console.log('Checking account status...');
       const todoAccountPda = await getTodoAccountPDA(userPublicKey);
+      console.log('Todo Account PDA:', todoAccountPda.toString());
+
       const account = await (program.account as any).list.fetchNullable(todoAccountPda);
+      console.log('Fetched account data:', account);
 
       if (account) {
+        console.log('Account found with todos:', account.todos);
         setInitialized(true);
         setTodos(account.todos || []);
+        console.log('Updated local todos state:', account.todos);
       } else {
         console.log('Account not found');
         setInitialized(false);
@@ -534,7 +165,6 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
   };
 
-  // 계정 초기화
   const initializeAccount = async (): Promise<void> => {
     if (!program || !phantomWallet?.publicKey) return;
     setLoading(true);
@@ -543,7 +173,6 @@ export default function SolanaTodoApp(): React.ReactElement {
       const userPublicKey = new PublicKey(phantomWallet.publicKey.toString());
       const todoAccountPda = await getTodoAccountPDA(userPublicKey);
 
-      // PDA 이미 존재하는지 확인
       const existing = await (program.account as any).list.fetchNullable(todoAccountPda);
       if (existing) {
         console.log('Account already initialized.');
@@ -552,7 +181,6 @@ export default function SolanaTodoApp(): React.ReactElement {
         return;
       }
 
-      // 초기화 진행
       const tx = await program.methods
         .initialize()
         .accounts({
@@ -574,7 +202,6 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
   };
 
-  // Todo 추가
   const addTodo = async (): Promise<void> => {
     const content = todoInput.trim();
 
@@ -613,7 +240,7 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
   };
 
-  // Todo 상태 토글
+
   const toggleTodo = async (index: number): Promise<void> => {
     if (!program || !phantomWallet?.publicKey) return;
 
@@ -621,6 +248,9 @@ export default function SolanaTodoApp(): React.ReactElement {
     try {
       const userPublicKey = new PublicKey(phantomWallet.publicKey.toString());
       const todoAccountPda = await getTodoAccountPDA(userPublicKey);
+
+      console.log(`Toggling todo at index: ${index}`);
+      console.log('Current todos before toggle:', todos);
 
       const tx = await program.methods
         .updateState(index)
@@ -631,6 +261,11 @@ export default function SolanaTodoApp(): React.ReactElement {
         .rpc();
 
       console.log('Toggle todo transaction:', tx);
+
+      await connection.confirmTransaction(tx, 'confirmed');
+      console.log('Transaction confirmed');
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
       await checkAccountStatus(userPublicKey);
 
     } catch (error: any) {
@@ -641,7 +276,6 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
   };
 
-  // Todo 삭제
   const deleteTodo = async (index: number): Promise<void> => {
     if (!program || !phantomWallet?.publicKey) return;
 
@@ -669,7 +303,6 @@ export default function SolanaTodoApp(): React.ReactElement {
     }
   };
 
-  // 지갑 연결 해제
   const disconnectWallet = async (): Promise<void> => {
     try {
       if (phantomWallet && phantomWallet.disconnect) {
@@ -684,25 +317,24 @@ export default function SolanaTodoApp(): React.ReactElement {
     setInitialized(false);
   };
 
-  // 통계 계산
+
   const totalTodos = todos.length;
-  const completedTodos = todos.filter(todo => todo.is_done).length;
+  const completedTodos = todos.filter(todo => todo.isDone).length;
   const pendingTodos = totalTodos - completedTodos;
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter' && !loading) {
       addTodo();
     }
-  }; 
+  };
   useEffect(() => {
     const checkWalletConnection = async () => {
       if (typeof window === 'undefined') return;
-  
+
       const provider = window.phantom?.solana || window.solana;
       if (!provider?.isPhantom) return;
-  
+
       try {
-        // onlyIfTrusted: true → 이전에 연결 승인한 지갑이면 자동 연결
         const res = await provider.connect();
         setPhantomWallet(provider);
         setWalletAddress(res.publicKey.toString());
@@ -711,11 +343,10 @@ export default function SolanaTodoApp(): React.ReactElement {
         console.log('Wallet not connected:', err);
       }
     };
-  
+
     checkWalletConnection();
   }, []);
-  
-  // 지갑과 프로그램이 준비되면 계정 상태 확인
+
   useEffect(() => {
     if (phantomWallet?.publicKey && program) {
       const userPublicKey = new PublicKey(phantomWallet.publicKey.toString());
@@ -771,13 +402,13 @@ export default function SolanaTodoApp(): React.ReactElement {
                 ) : (
                   <>
                     {!initialized && program && (
-                       <button
-                       onClick={initializeAccount}
-                       disabled={loading}
-                       className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
-                     >
-                       {loading ? 'Initializing...' : 'Initialize Account'}
-                     </button>
+                      <button
+                        onClick={initializeAccount}
+                        disabled={loading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
+                      >
+                        {loading ? 'Initializing...' : 'Initialize Account'}
+                      </button>
                     )}
                     <button
                       onClick={disconnectWallet}
@@ -845,7 +476,7 @@ export default function SolanaTodoApp(): React.ReactElement {
                     todos.map((todo, index) => (
                       <div
                         key={index}
-                        className={`bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 ${todo.is_done ? 'opacity-75 bg-green-50 border-green-200' : ''
+                        className={`bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 ${todo.isDone ? 'opacity-75 bg-green-50 border-green-200' : ''
                           }`}
                       >
                         <div className="flex items-center justify-between">
@@ -853,15 +484,15 @@ export default function SolanaTodoApp(): React.ReactElement {
                             <button
                               onClick={() => toggleTodo(index)}
                               disabled={loading}
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${todo.is_done
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${todo.isDone
                                 ? 'bg-green-400 border-green-400 text-white'
                                 : 'border-gray-400 hover:border-green-400'
                                 }`}
                             >
-                              {todo.is_done && '✓'}
+                              {todo.isDone && '✓'}
                             </button>
                             <div className="flex-1">
-                              <p className={`text-lg font-medium ${todo.is_done ? 'line-through text-gray-500' : 'text-gray-800'
+                              <p className={`text-lg font-medium ${todo.isDone ? 'line-through text-gray-500' : 'text-gray-800'
                                 }`}>
                                 {todo.content}
                               </p>
