@@ -16,10 +16,21 @@ pub mod todolist {
     pub fn add_content(ctx: Context<AddContent>, content: String) -> Result<()> {
         let todo_account = &mut ctx.accounts.todo_account;
 
+        // 권한 검증
+        require!(
+            todo_account.user == ctx.accounts.user.key(),
+            TodoError::Unauthorized
+        );
+
+        // 입력 검증
+        require!(!content.trim().is_empty(), TodoError::EmptyContent);
+        require!(content.len() <= 200, TodoError::ContentTooLong);
+
+        // 최대 할일 개수 검증
         require!(todo_account.todos.len() < 20, TodoError::MaxTodosReached);
 
         todo_account.todos.push(Item {
-            content,
+            content: content.trim().to_string(),
             is_done: false,
         });
 
@@ -29,6 +40,13 @@ pub mod todolist {
     pub fn update_state(ctx: Context<UpdateState>, index: u8) -> Result<()> {
         let todo_account = &mut ctx.accounts.todo_account;
 
+        // 권한 검증
+        require!(
+            todo_account.user == ctx.accounts.user.key(),
+            TodoError::Unauthorized
+        );
+
+        // 인덱스 검증
         require!(
             (index as usize) < todo_account.todos.len(),
             TodoError::InvalidIndex
@@ -36,6 +54,50 @@ pub mod todolist {
 
         let task = &mut todo_account.todos[index as usize];
         task.is_done = !task.is_done;
+
+        Ok(())
+    }
+
+    pub fn remove_todo(ctx: Context<UpdateState>, index: u8) -> Result<()> {
+        let todo_account = &mut ctx.accounts.todo_account;
+
+        // 권한 검증
+        require!(
+            todo_account.user == ctx.accounts.user.key(),
+            TodoError::Unauthorized
+        );
+
+        // 인덱스 검증
+        require!(
+            (index as usize) < todo_account.todos.len(),
+            TodoError::InvalidIndex
+        );
+
+        todo_account.todos.remove(index as usize);
+        Ok(())
+    }
+
+    pub fn update_content(ctx: Context<UpdateState>, index: u8, new_content: String) -> Result<()> {
+        let todo_account = &mut ctx.accounts.todo_account;
+
+        // 권한 검증
+        require!(
+            todo_account.user == ctx.accounts.user.key(),
+            TodoError::Unauthorized
+        );
+
+        // 입력 검증
+        require!(!new_content.trim().is_empty(), TodoError::EmptyContent);
+        require!(new_content.len() <= 200, TodoError::ContentTooLong);
+
+        // 인덱스 검증
+        require!(
+            (index as usize) < todo_account.todos.len(),
+            TodoError::InvalidIndex
+        );
+
+        let task = &mut todo_account.todos[index as usize];
+        task.content = new_content.trim().to_string();
 
         Ok(())
     }
@@ -51,7 +113,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = user_account,
-        space = 1024,
+        space = 8 + 32 + 4 + (20 * (4 + 200 + 1)), // 계산된 공간: discriminator + Pubkey + Vec length + (20 todos * (String length + content + bool))
         seeds = [TODO_ACCOUNT_SEED, user_account.key.as_ref()],
         bump
     )]
@@ -96,10 +158,14 @@ pub struct Item {
 
 #[error_code]
 pub enum TodoError {
-    #[msg("Maximum number of todos reached")]
+    #[msg("Maximum number of todos reached (20)")]
     MaxTodosReached,
     #[msg("Invalid todo index")]
     InvalidIndex,
-    #[msg("Unauthorized access")]
+    #[msg("Unauthorized access - you can only modify your own todos")]
     Unauthorized,
+    #[msg("Content cannot be empty")]
+    EmptyContent,
+    #[msg("Content too long (maximum 200 characters)")]
+    ContentTooLong,
 }
