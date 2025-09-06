@@ -148,15 +148,17 @@ anchor test
 │   └── todolist/
 │       └── src/
 │           └── lib.rs          # Smart contract code
-├── app/
+├── app/                        # Frontend application
 │   ├── components/
 │   │   └── SolanaTodoApp.tsx   # Main React component
-│   └── page.tsx                # Next.js page
+│   ├── page.tsx                # Next.js page
+│   └── package.json            # Frontend dependencies
 ├── tests/
 │   └── todolist.ts             # Anchor tests
-└── target/
-    └── idl/
-        └── todolist.json       # Generated IDL
+├── target/
+│   └── idl/
+│       └── todolist.json       # Generated IDL
+└── Anchor.toml                 # Anchor configuration
 ```
 
 ## Troubleshooting
